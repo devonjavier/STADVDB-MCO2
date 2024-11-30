@@ -50,6 +50,7 @@
     <table id="gameDetailsTable" style="display:none;">
         <thead>
             <tr>
+                <th>Game ID</th>
                 <th>Game Name</th>
                 <th>Release Date</th>
                 <th>Game Description</th>
@@ -90,41 +91,41 @@
         const gameDetailsTable = document.getElementById('gameDetailsTable');
         const gameDetailsBody = document.getElementById('gameDetailsBody');
         let selectedGameID = null;
-
+    
         // Handle form submission for fetching game details
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
-
+    
             const gameID = document.getElementById('gameID').value;
             const estimatedOwnership = document.getElementById('ownership').value;
-
+    
             if (!gameID || !estimatedOwnership) {
                 alert('Please select both Game ID and Estimated Ownership.');
                 return;
             }
-
+    
             try {
                 const response = await fetch('/get-game-details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ game_ID: gameID, estimated_ownership: estimatedOwnership })
                 });
-
+    
                 if (!response.ok) {
                     throw new Error('Game details not found');
                 }
-
+    
                 const gameDetails = await response.json();
                 selectedGameID = gameDetails.details_ID;
-
+    
                 // Show the table and populate it with game details
                 gameDetailsTable.style.display = 'block';
                 gameDetailsBody.innerHTML = '';
-
+    
                 const row = document.createElement('tr');
                 Object.keys(gameDetails).forEach(key => {
                     const cell = document.createElement('td');
-                    cell.textContent = gameDetails[key] || 'N/A'; 
+                    cell.textContent = gameDetails[key] !== null && gameDetails[key] !== undefined ? gameDetails[key] : 'N/A';
                     row.appendChild(cell);
                 });
                 gameDetailsBody.appendChild(row);
@@ -132,31 +133,31 @@
                 alert('Error fetching game details: ' + error.message);
             }
         });
-
+    
         // Handle game update form submission
         updateForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-
+    
             if (!selectedGameID) {
                 alert('Please select a game first.');
                 return;
             }
-
+    
             const newGameName = document.getElementById('newGameName').value;
             const newPrice = document.getElementById('newPrice').value;
-
+    
             if (!newGameName && !newPrice) {
                 alert('Please provide at least one field to update.');
                 return;
             }
-
+    
             try {
                 const response = await fetch('/update-game', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ game_ID: selectedGameID, newGameName, newPrice })
                 });
-
+    
                 if (response.ok) {
                     alert('Game updated successfully.');
                     // Optionally, refresh the game details
@@ -168,24 +169,24 @@
                 alert('Error updating game: ' + error.message);
             }
         });
-
+    
         // Handle game deletion
         deleteButton.addEventListener('click', async function() {
             if (!selectedGameID) {
                 alert('Please select a game first.');
                 return;
             }
-
+    
             const confirmDelete = confirm('Are you sure you want to delete this game?');
             if (!confirmDelete) return;
-
+    
             try {
                 const response = await fetch('/delete-game', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ game_ID: selectedGameID })
                 });
-
+    
                 if (response.ok) {
                     alert('Game deleted successfully.');
                     // Optionally, clear the game details
