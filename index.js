@@ -81,6 +81,26 @@ async function getGameDetails(game_ID, estimated_ownership) {
     }
 }
 
+// Updating game information
+app.post('/update-game', async (req, res) => {
+    const { game_ID, newGameName, newPrice } = req.body
+    if(game_ID !== null){
+        try{
+            if(details_ID){
+                const response = await update_game(details_ID, newGameName, newPrice);
+                if(!response){
+                    res.status(404).json({ success: false, message: 'Game ID not found or no updates applied.' });
+                } else {
+                    res.status(200).json({ success: true, message: 'Game updated successfully.' });
+                }
+            }
+        } catch(error) {
+            console.error('Error updating game:', error.message);
+            res.status(500).send({ success: false, message: 'Error updating game.', error: error.message });
+        }
+    }
+});
+
 async function update_game(details_id, newGameName, newPrice){
 
     console.log(newGameName, newPrice);
@@ -100,23 +120,25 @@ async function update_game(details_id, newGameName, newPrice){
     } else return { success: true, message: 'Game updated successfully.' };
 };
 
-// Updating game information
-app.post('/update-game', async (req, res) => {
-    const { game_ID, newGameName, newPrice } = req.body
+
+app.post('/delete-game', async (req, res) => {
+    const { game_ID } = req.body
     if(game_ID !== null){
         try{
-            if(details_ID){
-                const response = await update_game(details_ID, newGameName, newPrice);
-                if(!response){
-                    res.status(404).json({ success: false, message: 'Game ID not found or no updates applied.' });
-                } else {
-                    res.status(200).json({ success: true, message: 'Game updated successfully.' });
-                }
-            }
+            await Fact_Game.destroy({
+                where: { details_ID: details_ID },
+            });
+
+            // Then delete the row in DimDetails
+            await DimDetails.destroy({
+                where: { details_ID: details_ID },
+            });
         } catch(error) {
             console.error('Error updating game:', error.message);
-            res.status(500).send({ success: false, message: 'Error updating game.', error: error.message });
+            res.status(500).send({ success: false, message: 'Error deleting game.', error: error.message });
         }
+
+        res.status(200).json({ success: true, message: 'Game deleted successfully.' });
     }
 });
 
