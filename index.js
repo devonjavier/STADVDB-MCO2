@@ -38,16 +38,20 @@ app.get('/dev', async (req, res) => {
 });
 
 app.post('/get-game-details', async (req, res) => {
-    const { game_ID, estimated_ownership } = req.body;
+    const { game_ID } = req.body;
 
     try {
-        const gameDetails = await getGameDetails(game_ID, estimated_ownership);
+        const game = await Fact_Game.findOne({
+            where: { game_ID },
+            include: [{ model: DimDetails, as: 'details' }]
+        });
 
-        if (!gameDetails) {
+        if (!game) {
             return res.status(404).send('Game details not found');
         }
 
-        res.json(gameDetails);
+        details_ID = game.details_ID; // Store details_ID for future operations
+        res.json(game.details.toJSON());
     } catch (err) {
         console.error(err);
         res.status(500).send('Error fetching game details');
