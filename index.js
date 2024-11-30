@@ -15,6 +15,8 @@ const {
 const app = express();
 const PORT = 3000;
 
+let details_ID; // added to store details_ID after selecting a game
+
 app.use(express.json());
 
 // Server static files (e.g, HTML, CSS, JS)
@@ -71,9 +73,51 @@ async function getGameDetails(game_ID, estimated_ownership) {
             return null;
         }
 
+        details_ID = game.details_ID
         return game.details.toJSON();
     } catch (err) {
         console.error(err);
         throw err;
     }
 }
+
+async function update_game(details_id, newGameName, newPrice){
+
+    console.log(newGameName, newPrice);
+
+    const { error } = await DimDetails.update(
+        {
+            game_name : newGameName,
+            price : newPrice
+        }, 
+        {
+        where: { details_ID : details_id }
+        })
+
+    if(error){
+        console.log(error);
+        return { success: false, message: 'No rows updated. game_id may not exist.' };
+    } else return { success: true, message: 'Game updated successfully.' };
+};
+
+// Updating game information
+app.post('/update-game', async (req, res) => {
+    const { game_ID, newGameName, newPrice } = req.body
+    if(game_ID !== null){
+        try{
+            if(details_ID){
+                const response = await update_game(details_ID, newGameName, newPrice);
+                if(!response){
+                    res.status(404).json({ success: false, message: 'Game ID not found or no updates applied.' });
+                } else {
+                    res.status(200).json({ success: true, message: 'Game updated successfully.' });
+                }
+            }
+        } catch(error) {
+            console.error('Error updating game:', error.message);
+            res.status(500).send({ success: false, message: 'Error updating game.', error: error.message });
+        }
+    }
+});
+
+
