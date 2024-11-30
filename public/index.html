@@ -3,11 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Website</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Game Details</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to our Website!</h1>
-    <script src="script.js"></script>
+    <h1>Game Details</h1>
+
+    <form id="gameForm">
+        <h2>Select Game</h2>
+        
+        <!-- Game Selection by ID -->
+        <label for="gameID">Game ID:</label>
+        <input type="number" id="gameID" name="game_ID"><br><br>
+
+        <!-- Game Selection by Estimated Ownership -->
+        <label for="ownership">Estimated Ownership:</label>
+        <select id="ownership" name="estimated_ownership">
+            <option value="">-- Select Ownership Level --</option>
+            <option value="Very Low">Very Low</option>
+            <option value="None">None</option>
+            <option value="Low">Low</option>
+            <option value="Low Moderate">Low Moderate</option>
+            <option value="Moderate">Moderate</option>
+            <option value="High Moderate">High Moderate</option>
+            <option value="2M+">2M+</option>
+            <option value="High">High</option>
+        </select><br><br>
+
+        <button type="submit">Get Game Details</button>
+    </form>
+
+    <!-- Table to Display Game Details -->
+    <h2>Game Details</h2>
+    <table id="gameDetailsTable" style="display:none;">
+        <thead>
+            <tr>
+                <th>Game Name</th>
+                <th>Release Date</th>
+                <th>Game Description</th>
+                <th>Website</th>
+                <th>Support URL</th>
+                <th>Support Email</th>
+                <th>Peak CCU</th>
+                <th>Price</th>
+                <th>Game DLC Count</th>
+                <th>Recommendation Count</th>
+                <th>Achievement Count</th>
+                <th>Estimated Ownership</th>
+                <th>ESRB Rating</th>
+            </tr>
+        </thead>
+        <tbody id="gameDetailsBody"></tbody>
+    </table>
+
+    <!-- Update and Delete Game Section -->
+    <h2>Update Game</h2>
+    <form id="updateForm">
+        <label for="newGameName">New Game Name:</label>
+        <input type="text" id="newGameName" name="game_name"><br><br>
+
+        <label for="newPrice">New Price:</label>
+        <input type="number" id="newPrice" name="price" step="0.01"><br><br>
+
+        <button type="submit">Update Game</button>
+    </form>
+
+    <h2>Delete Game</h2>
+    <button id="deleteButton">Delete Game</button>
+
+    <script>
+        const form = document.getElementById('gameForm');
+        const updateForm = document.getElementById('updateForm');
+        const deleteButton = document.getElementById('deleteButton');
+        const gameDetailsTable = document.getElementById('gameDetailsTable');
+        const gameDetailsBody = document.getElementById('gameDetailsBody');
+        let selectedGameID = null;
+
+        // Handle form submission for fetching game details
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const gameID = document.getElementById('gameID').value;
+            const estimatedOwnership = document.getElementById('ownership').value;
+
+            if (!gameID || !estimatedOwnership) {
+                alert('Please select both Game ID and Estimated Ownership.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/get-game-details', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ game_ID: gameID, estimated_ownership: estimatedOwnership })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Game details not found');
+                }
+
+                const gameDetails = await response.json();
+                selectedGameID = gameDetails.details_ID;
+
+                // Show the table and populate it with game details
+                gameDetailsTable.style.display = 'block';
+                gameDetailsBody.innerHTML = '';
+
+                const row = document.createElement('tr');
+                Object.keys(gameDetails).forEach(key => {
+                    const cell = document.createElement('td');
+                    cell.textContent = gameDetails[key] || 'N/A'; 
+                    row.appendChild(cell);
+                });
+                gameDetailsBody.appendChild(row);
+            } catch (error) {
+                alert('Error fetching game details: ' + error.message);
+            }
+        });
+
+        // Handle game update form submission
+        updateForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (!selectedGameID) {
+                alert('Please select a game first.');
+                return;
+            }
+
+            const newGameName = document.getElementById('newGameName').value;
+            const newPrice = document.getElementById('newPrice').value;
+
+            if (!newGameName && !newPrice) {
+                alert('Please provide at least one field to update.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/update-game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ game_ID: selectedGameID, newGameName, newPrice })
+                });
+
+                if (response.ok) {
+                    alert('Game updated successfully.');
+                    // Optionally, refresh the game details
+                    form.dispatchEvent(new Event('submit'));
+                } else {
+                    throw new Error('Failed to update game');
+                }
+            } catch (error) {
+                alert('Error updating game: ' + error.message);
+            }
+        });
+
+        // Handle game deletion
+        deleteButton.addEventListener('click', async function() {
+            if (!selectedGameID) {
+                alert('Please select a game first.');
+                return;
+            }
+
+            const confirmDelete = confirm('Are you sure you want to delete this game?');
+            if (!confirmDelete) return;
+
+            try {
+                const response = await fetch('/delete-game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ game_ID: selectedGameID })
+                });
+
+                if (response.ok) {
+                    alert('Game deleted successfully.');
+                    // Optionally, clear the game details
+                    gameDetailsTable.style.display = 'none';
+                    selectedGameID = null;
+                } else {
+                    throw new Error('Failed to delete game');
+                }
+            } catch (error) {
+                alert('Error deleting game: ' + error.message);
+            }
+        });
+    </script>
 </body>
 </html>

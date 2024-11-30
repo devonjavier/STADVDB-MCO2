@@ -1,6 +1,6 @@
 const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize('mco1_datawarehouse', 'root', '0614loveSSHSmeow!', {
+const sequelize = new Sequelize('mco1_datawarehouse', 'root', '5718', {
     host: 'localhost',
     dialect: 'mysql'
 });
