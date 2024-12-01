@@ -1,30 +1,39 @@
 const express = require('express');
 const { Sequelize } = require('sequelize'); // Sequelize instance for queries
-const { GameDetails1, GameDetails2, GameDetails3 } = require('./models/MCO_datawarehouse'); // Import the GameDetails model
+const { GameDetails1, GameDetails2, GameDetails3 } = require('./models/MCO_datawarehouse'); // Import the GameDetails model for each node
+const { node2 } = require('./db');
 const app = express();
 const PORT = 3000;
 
 
 // section to initialize connection booleans
-let centralnodeconnection, node2connection, node3connection;
+let centralnodeconnection, node2connection, node3connection, 
+centralnodeInactiveAtStart = false, node2InactiveAtStart = false, node3InactiveAtStart = false;
 
 initializeConnections();
 
 async function initializeConnections(){
     if(GameDetails1){
         centralnodeconnection = true;
-    } else centralnodeconnection = false;
+    } else {
+        centralnodeconnection = false;
+        centralnodeInactiveAtStart = true;
+    }
 
     if(GameDetails2){
         node2connection = true;
-    } else node2connection = false;
+    } else {
+        node2connection = false;
+        node2InactiveAtStart = true;
+    }
 
     if(GameDetails3){
         node3connection = true;
-    } else node3connection = false;
+    } else {
+        node3connection = false;
+        node3InactiveAtStart = true;
+    }
 }
-
-
 
 app.use(express.json());
 
