@@ -9,14 +9,26 @@ const centralNode = new Sequelize('mco1_datawarehouse', 'node1', 'rootpass', {
     host: 'ccscloud.dlsu.edu.ph',
     dialect: 'mysql',
     port: 20842,
-    logging: false
+    logging: false,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
 });
 
 const node2 = new Sequelize('mco1_datawarehouse', 'node2', 'rootpass', {
     host: 'ccscloud.dlsu.edu.ph',
     dialect: 'mysql',
     port: 20852,
-    logging: false
+    logging: false,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
 });
 
 // node3 here
@@ -24,7 +36,13 @@ const node3 = new Sequelize('mco1_datawarehouse', 'node3', 'rootpass', {
     host: 'ccscloud.dlsu.edu.ph',
     dialect: 'mysql',
     port: 20862,
-    logging: false
+    logging: false,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
 });
 
 Promise.all([
