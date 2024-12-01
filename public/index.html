@@ -163,6 +163,10 @@
         const node2Button = document.getElementById('node2-toggle');
         const node3Button = document.getElementById('node3-toggle');
 
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchNodeStatuses(); 
+        });
+
         async function fetchNodeStatuses() {
             try {
                 const response = await fetch('/node-statuses');
@@ -178,14 +182,9 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            fetchNodeStatuses(); // Fetch and update UI on page load
-        });
-
-
         async function toggleNode(nodeID, endpoint) {
             try {
-                // Make the API request to toggle the node's connection
+                
                 const response = await fetch(endpoint, { method: 'POST' });
 
                 if (!response.ok) throw new Error('Failed to toggle node connection.');
@@ -193,19 +192,19 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    return data.status ? 'Active' : 'Inactive'; // Return the updated status
+                    return data.status ? 'Active' : 'Inactive';
                 } else {
                     throw new Error(data.message || 'Unexpected error occurred.');
                 }
             } catch (error) {
                 console.error(`Error toggling ${nodeID}:`, error);
                 alert(`Error toggling ${nodeID}: ` + error.message);
-                return null; // Return null in case of an error
+                return null; 
             }
         }
 
         function updateNodeUI(nodeID, newStatus) {
-            if (newStatus === null) return; // Do nothing if the update failed
+            if (newStatus === null) return; 
 
             const statusSpan = document.getElementById(`${nodeID}-status`);
             statusSpan.textContent = newStatus;
