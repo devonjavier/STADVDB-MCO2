@@ -8,20 +8,23 @@ const { Sequelize } = require('sequelize');
 const centralNode = new Sequelize('mco1_datawarehouse', 'node1', 'rootpass', {
     host: 'ccscloud.dlsu.edu.ph',
     dialect: 'mysql',
-    port: 20842
+    port: 20842,
+    logging: false
 });
 
 const node2 = new Sequelize('mco1_datawarehouse', 'node2', 'rootpass', {
     host: 'ccscloud.dlsu.edu.ph',
     dialect: 'mysql',
-    port: 20852
+    port: 20852,
+    logging: false
 });
 
 // node3 here
 const node3 = new Sequelize('mco1_datawarehouse', 'node3', 'rootpass', {
     host: 'ccscloud.dlsu.edu.ph',
     dialect: 'mysql',
-    port: 20862
+    port: 20862,
+    logging: false
 });
 
 Promise.all([

@@ -4,6 +4,28 @@ const { GameDetails1, GameDetails2, GameDetails3 } = require('./models/MCO_dataw
 const app = express();
 const PORT = 3000;
 
+
+// section to initialize connection booleans
+let centralnodeconnection, node2connection, node3connection;
+
+initializeConnections();
+
+async function initializeConnections(){
+    if(GameDetails1){
+        centralnodeconnection = true;
+    } else centralnodeconnection = false;
+
+    if(GameDetails2){
+        node2connection = true;
+    } else node2connection = false;
+
+    if(GameDetails3){
+        node3connection = true;
+    } else node3connection = false;
+}
+
+
+
 app.use(express.json());
 
 // Serve static files (e.g., HTML, CSS, JS)
