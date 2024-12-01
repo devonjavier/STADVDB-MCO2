@@ -1,6 +1,6 @@
 const express = require('express');
 const { Sequelize } = require('sequelize'); // Sequelize instance for queries
-const { GameDetails } = require('./models/MCO_datawarehouse'); // Import the GameDetails model
+const { GameDetails1, GameDetails2, GameDetails3 } = require('./models/MCO_datawarehouse'); // Import the GameDetails model
 const app = express();
 const PORT = 3000;
 
@@ -19,7 +19,7 @@ app.post('/get-game-details', async (req, res) => {
     const { game_ID } = req.body;
 
     try {
-        const game = await GameDetails.findOne({
+        const game = await GameDetails1.findOne({
             where: { game_ID }
         });
 
@@ -44,7 +44,7 @@ app.post('/update-game', async (req, res) => {
     }
 
     try {
-        const game = await GameDetails.findOne({
+        const game = await GameDetails1.findOne({
             where: { game_ID }
         });
 
@@ -73,7 +73,7 @@ app.post('/delete-game', async (req, res) => {
     }
 
     try {
-        const game = await GameDetails.findOne({
+        const game = await GameDetails1.findOne({
             where: { game_ID }
         });
 
@@ -100,7 +100,7 @@ app.post('/get-games-sum', async (req, res) => {
     }
 
     try {
-        const sum = await GameDetails.count({
+        const sum = await GameDetails1.count({
             where: Sequelize.where(
                 Sequelize.fn('YEAR', Sequelize.col('release_date')),
                 releaseYear
@@ -123,14 +123,14 @@ app.post('/get-games-avg', async (req, res) => {
     }
 
     try {
-        const totalGames = await GameDetails.count({
+        const totalGames = await GameDetails1.count({
             where: Sequelize.where(
                 Sequelize.fn('YEAR', Sequelize.col('release_date')),
                 releaseYear
             )
         });
 
-        const totalRecords = await GameDetails.count();
+        const totalRecords = await GameDetails1.count();
 
         const average = totalGames / totalRecords;
 
