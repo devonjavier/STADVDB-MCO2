@@ -1,15 +1,13 @@
 const express = require('express');
 const { Sequelize } = require('sequelize'); // Sequelize instance for queries
 const { GameDetails1, GameDetails2, GameDetails3 } = require('./models/MCO_datawarehouse'); // Import the GameDetails model for each node
-const { node2 } = require('./db');
 const app = express();
 const PORT = 3000;
-
 
 // section to initialize connection booleans
 let centralnodeconnection, node2connection, node3connection, 
 centralnodeInactiveAtStart = false, node2InactiveAtStart = false, node3InactiveAtStart = false;
-
+// MAKING DOUBLE SURE U CANT TURN ON THE NDOES
 initializeConnections();
 
 async function initializeConnections(){
@@ -50,15 +48,33 @@ app.post('/get-game-details', async (req, res) => {
     const { game_ID } = req.body;
 
     try {
-        const game = await GameDetails1.findOne({
-            where: { game_ID }
-        });
+        let game;
+        if(node2connection){
+            game = await GameDetails2.findOne({
+                where: { game_ID }
+            });
+        }
+        
+        if (!game) {
+            if(node3connection){
+                game = await GameDetails3.findOne({
+                    where: { game_ID }
+                });
+            }
+        }
+
+        if (!game) {
+            if(centralnodeconnection){
+                game = await GameDetails1.findOne({
+                    where: { game_ID }
+                });
+            }  
+        }
 
         if (!game) {
             return res.status(404).send('Game details not found');
         }
 
-        // Respond with game details
         res.json(game);
     } catch (err) {
         console.error(err);
@@ -74,24 +90,28 @@ app.post('/update-game', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Game ID and new game name are required' });
     }
 
-    try {
-        const game = await GameDetails1.findOne({
-            where: { game_ID }
-        });
-
-        if (!game) {
-            return res.status(404).json({ success: false, message: 'Game not found' });
+    if(centralnodeconnection){
+        try {
+            const game = await GameDetails1.findOne({
+                where: { game_ID }
+            });
+    
+            if (!game) {
+                return res.status(404).json({ success: false, message: 'Game not found' });
+            }
+    
+            // Only update the game name if provided
+            const updatedGame = await game.update({
+                game_name: newGameName // Only updating the game_name
+            });
+    
+            res.status(200).json({ success: true, message: 'Game updated successfully.', game: updatedGame });
+        } catch (error) {
+            console.error('Error updating game:', error.message);
+            res.status(500).send({ success: false, message: 'Error updating game.', error: error.message });
         }
-
-        // Only update the game name if provided
-        const updatedGame = await game.update({
-            game_name: newGameName // Only updating the game_name
-        });
-
-        res.status(200).json({ success: true, message: 'Game updated successfully.', game: updatedGame });
-    } catch (error) {
-        console.error('Error updating game:', error.message);
-        res.status(500).send({ success: false, message: 'Error updating game.', error: error.message });
+    } else {
+        res.status(503).send({ success: false, message: 'Service unavailable, please try again later.', error: error.message });
     }
 });
 
@@ -103,46 +123,86 @@ app.post('/delete-game', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Game ID is required' });
     }
 
-    try {
-        const game = await GameDetails1.findOne({
-            where: { game_ID }
-        });
-
-        if (!game) {
-            return res.status(404).json({ success: false, message: 'Game not found' });
+    if(centralnodeconnection){
+        try {
+            const game = await GameDetails1.findOne({
+                where: { game_ID }
+            });
+    
+            if (!game) {
+                return res.status(404).json({ success: false, message: 'Game not found' });
+            }
+    
+            // Delete the game
+            await game.destroy();
+    
+            res.status(200).json({ success: true, message: 'Game deleted successfully.' });
+        } catch (error) {
+            console.error('Error deleting game:', error.message);
+            res.status(500).send({ success: false, message: 'Error deleting game.', error: error.message });
         }
-
-        // Delete the game
-        await game.destroy();
-
-        res.status(200).json({ success: true, message: 'Game deleted successfully.' });
-    } catch (error) {
-        console.error('Error deleting game:', error.message);
-        res.status(500).send({ success: false, message: 'Error deleting game.', error: error.message });
+    } else {
+        res.status(503).send({ success: false, message: 'Service unavailable, please try again later.', error: error.message });
     }
+    
 });
 
 // Sum of games in a specific release year
 app.post('/get-games-sum', async (req, res) => {
     const { releaseYear } = req.body;
 
+   
     if (!releaseYear || !/^\d{4}$/.test(releaseYear)) {
         return res.status(400).json({ success: false, message: 'Valid release year is required' });
     }
 
-    try {
-        const sum = await GameDetails1.count({
-            where: Sequelize.where(
-                Sequelize.fn('YEAR', Sequelize.col('release_date')),
-                releaseYear
-            )
-        });
-
-        res.status(200).json({ success: true, sum });
-    } catch (error) {
-        console.error('Error fetching sum of games:', error.message);
-        res.status(500).send({ success: false, message: 'Error fetching sum of games.', error: error.message });
+    if(Number(releaseYear) < 2019 && node2connection){
+        try {
+            console.log('node2');
+            const sum = await GameDetails2.count({
+                where: Sequelize.where(
+                    Sequelize.fn('YEAR', Sequelize.col('release_date')),
+                    releaseYear
+                )
+            });
+    
+            res.status(200).json({ success: true, sum });
+        } catch (error) {
+            console.error('Error fetching sum of games:', error.message);
+            res.status(500).send({ success: false, message: 'Error fetching sum of games.', error: error.message });
+        }
+    } else if(Number(releaseYear) >= 2019 && node3connection){
+        try {
+            console.log('node3');
+            const sum = await GameDetails3.count({
+                where: Sequelize.where(
+                    Sequelize.fn('YEAR', Sequelize.col('release_date')),
+                    releaseYear
+                )
+            });
+    
+            res.status(200).json({ success: true, sum });
+        } catch (error) {
+            console.error('Error fetching sum of games:', error.message);
+            res.status(500).send({ success: false, message: 'Error fetching sum of games.', error: error.message });
+        }
+    } else if(centralnodeconnection) {
+        try {
+            console.log('node1');
+            const sum = await GameDetails1.count({
+                where: Sequelize.where(
+                    Sequelize.fn('YEAR', Sequelize.col('release_date')),
+                    releaseYear
+                )
+            });
+    
+            res.status(200).json({ success: true, sum });
+        } catch (error) {
+            console.error('Error fetching sum of games:', error.message);
+            res.status(500).send({ success: false, message: 'Error fetching sum of games.', error: error.message });
+        }
     }
+    
 });
 
 // Average of games in a specific release year
@@ -153,23 +213,65 @@ app.post('/get-games-avg', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Valid release year is required' });
     }
 
-    try {
-        const totalGames = await GameDetails1.count({
-            where: Sequelize.where(
-                Sequelize.fn('YEAR', Sequelize.col('release_date')),
-                releaseYear
-            )
-        });
 
-        const totalRecords = await GameDetails1.count();
+    if(Number(releaseYear) < 2019 && node2connection){
+        try {
+            const totalGames = await GameDetails2.count({
+                where: Sequelize.where(
+                    Sequelize.fn('YEAR', Sequelize.col('release_date')),
+                    releaseYear
+                )
+            });
+    
+            const totalRecords = await GameDetails1.count();
+    
+            const average = totalGames / totalRecords;
+    
+            res.status(200).json({ success: true, average });
+        } catch (error) {
+            console.error('Error fetching average of games:', error.message);
+            res.status(500).send({ success: false, message: 'Error fetching average of games.', error: error.message });
+        }
 
-        const average = totalGames / totalRecords;
-
-        res.status(200).json({ success: true, average });
-    } catch (error) {
-        console.error('Error fetching average of games:', error.message);
-        res.status(500).send({ success: false, message: 'Error fetching average of games.', error: error.message });
+    } else if(Number(releaseYear) >= 2019 && node3connection){
+        try {
+            const totalGames = await GameDetails3.count({
+                where: Sequelize.where(
+                    Sequelize.fn('YEAR', Sequelize.col('release_date')),
+                    releaseYear
+                )
+            });
+    
+            const totalRecords = await GameDetails1.count();
+    
+            const average = totalGames / totalRecords;
+    
+            res.status(200).json({ success: true, average });
+        } catch (error) {
+            console.error('Error fetching average of games:', error.message);
+            res.status(500).send({ success: false, message: 'Error fetching average of games.', error: error.message });
+        }
+        
+    } else if (centralnodeconnection) {
+        try {
+            const totalGames = await GameDetails1.count({
+                where: Sequelize.where(
+                    Sequelize.fn('YEAR', Sequelize.col('release_date')),
+                    releaseYear
+                )
+            });
+    
+            const totalRecords = await GameDetails1.count();
+    
+            const average = totalGames / totalRecords;
+    
+            res.status(200).json({ success: true, average });
+        } catch (error) {
+            console.error('Error fetching average of games:', error.message);
+            res.status(500).send({ success: false, message: 'Error fetching average of games.', error: error.message });
+        }
     }
+    
 });
 
 // Start the server
