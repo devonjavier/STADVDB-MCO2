@@ -251,7 +251,7 @@ app.post('/get-games-avg', async (req, res) => {
             console.error('Error fetching average of games:', error.message);
             res.status(500).send({ success: false, message: 'Error fetching average of games.', error: error.message });
         }
-        
+
     } else if (centralnodeconnection) {
         try {
             const totalGames = await GameDetails1.count({
@@ -272,6 +272,50 @@ app.post('/get-games-avg', async (req, res) => {
         }
     }
     
+});
+
+app.get('/node-statuses', (req, res) => {
+    res.status(200).json({
+        centralNode: centralnodeconnection,
+        node2: node2connection,
+        node3: node3connection
+    });
+});
+
+
+app.post('/toggle-central-node', (req, res) => {
+    console.log('CENTRAL NODE BEFORE : ', centralnodeconnection);
+    centralnodeconnection = !centralnodeconnection;
+    console.log('CENTRAL NODE AFTER : ', centralnodeconnection);
+    res.status(200).json({
+        success: true,
+        message: `Central node connection is now ${centralnodeconnection ? 'enabled' : 'disabled'}.`,
+        status: centralnodeconnection
+    });
+});
+
+// Toggle Node 2 connection
+app.post('/toggle-node2', (req, res) => {
+    console.log('NODE 2 BEFORE : ', node2connection, '\n');
+    node2connection = !node2connection;
+    console.log('NODE 2 AFTER : ', node2connection, '\n');
+    res.status(200).json({
+        success: true,
+        message: `Node 2 connection is now ${node2connection ? 'enabled' : 'disabled'}.`,
+        status: node2connection
+    });
+});
+
+// Toggle Node 3 connection
+app.post('/toggle-node3', (req, res) => {
+    console.log('NODE 3 BEFORE : ', node3connection, '\n');
+    node3connection = !node3connection;
+    console.log('NODE 3 AFTER : ', node3connection, '\n');
+    res.status(200).json({
+        success: true,
+        message: `Node 3 connection is now ${node3connection ? 'enabled' : 'disabled'}.`,
+        status: node3connection
+    });
 });
 
 // Start the server

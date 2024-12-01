@@ -159,6 +159,75 @@
         let selectedGameID = null;
         const reportForm = document.getElementById('reportForm');
         const reportResult = document.getElementById('reportResult');
+        const node1Button = document.getElementById('node1-toggle');
+        const node2Button = document.getElementById('node2-toggle');
+        const node3Button = document.getElementById('node3-toggle');
+
+        async function fetchNodeStatuses() {
+            try {
+                const response = await fetch('/node-statuses');
+                if (!response.ok) throw new Error('Failed to fetch node statuses.');
+
+                const data = await response.json();
+
+                updateNodeUI('node1', data.centralNode ? 'Active' : 'Inactive');
+                updateNodeUI('node2', data.node2 ? 'Active' : 'Inactive');
+                updateNodeUI('node3', data.node3 ? 'Active' : 'Inactive');
+            } catch (error) {
+                console.error('Error fetching node statuses:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchNodeStatuses(); // Fetch and update UI on page load
+        });
+
+
+        async function toggleNode(nodeID, endpoint) {
+            try {
+                // Make the API request to toggle the node's connection
+                const response = await fetch(endpoint, { method: 'POST' });
+
+                if (!response.ok) throw new Error('Failed to toggle node connection.');
+
+                const data = await response.json();
+
+                if (data.success) {
+                    return data.status ? 'Active' : 'Inactive'; // Return the updated status
+                } else {
+                    throw new Error(data.message || 'Unexpected error occurred.');
+                }
+            } catch (error) {
+                console.error(`Error toggling ${nodeID}:`, error);
+                alert(`Error toggling ${nodeID}: ` + error.message);
+                return null; // Return null in case of an error
+            }
+        }
+
+        function updateNodeUI(nodeID, newStatus) {
+            if (newStatus === null) return; // Do nothing if the update failed
+
+            const statusSpan = document.getElementById(`${nodeID}-status`);
+            statusSpan.textContent = newStatus;
+            statusSpan.classList.toggle('active', newStatus === 'Active');
+            statusSpan.classList.toggle('inactive', newStatus === 'Inactive');
+        }
+
+        node1Button.addEventListener('click', async (e) => {
+            const newStatus = await toggleNode('Central Node', '/toggle-central-node');
+            await updateNodeUI('node1', newStatus);
+        });
+
+        node2Button.addEventListener('click', async function () {
+            const newStatus = await toggleNode('Node 2', '/toggle-node2');
+            await updateNodeUI('node2', newStatus);
+        });
+
+        node3Button.addEventListener('click', async function () {
+            const newStatus = await toggleNode('Node 3', '/toggle-node3');
+            await updateNodeUI('node3', newStatus);
+        });
+
 
         reportForm.addEventListener('submit', async function(e) {
             e.preventDefault();
