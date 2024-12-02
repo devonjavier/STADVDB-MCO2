@@ -1,14 +1,18 @@
 const { Sequelize } = require('sequelize');
+require('dotenv').config();
 
+// { path: '.env.local' }
+
+// ADD THIS LINE INSIDE .config();
 // const sequelize = new Sequelize('mco1_datawarehouse', 'root', '0614loveSSHSmeow!', {
 //     host: 'localhost',
 //     dialect: 'mysql'
 // });
 
-const centralNode = new Sequelize('mco1_datawarehouse', 'node1', 'rootpass', {
-    host: 'ccscloud.dlsu.edu.ph',
+const centralNode = new Sequelize('mco1_datawarehouse', process.env.DB1_USER, process.env.DB_PASS, {
+    host: process.env.DB_HOST,
     dialect: 'mysql',
-    port: 20842,
+    port: process.env.DB1_PORT,
     logging: false,
     dialectOptions: {
         ssl: {
@@ -18,10 +22,10 @@ const centralNode = new Sequelize('mco1_datawarehouse', 'node1', 'rootpass', {
     }
 });
 
-const node2 = new Sequelize('mco1_datawarehouse', 'node2', 'rootpass', {
-    host: 'ccscloud.dlsu.edu.ph',
+const node2 = new Sequelize('mco1_datawarehouse', process.env.DB2_USER, process.env.DB_PASS, {
+    host: process.env.DB_HOST,
     dialect: 'mysql',
-    port: 20852,
+    port: process.env.DB2_PORT,
     logging: false,
     dialectOptions: {
         ssl: {
@@ -32,10 +36,10 @@ const node2 = new Sequelize('mco1_datawarehouse', 'node2', 'rootpass', {
 });
 
 // node3 here
-const node3 = new Sequelize('mco1_datawarehouse', 'node3', 'rootpass', {
-    host: 'ccscloud.dlsu.edu.ph',
+const node3 = new Sequelize('mco1_datawarehouse', process.env.DB3_USER, process.env.DB_PASS, {
+    host: process.env.DB_HOST,
     dialect: 'mysql',
-    port: 20862,
+    port: process.env.DB3_PORT,
     logging: false,
     dialectOptions: {
         ssl: {
