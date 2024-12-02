@@ -1,6 +1,7 @@
 const express = require('express');
 const { Sequelize } = require('sequelize'); // Sequelize instance for queries
 const { GameDetails1, GameDetails2, GameDetails3 } = require('./models/MCO_datawarehouse'); // Import the GameDetails model for each node
+const { centralNode, node2, node3 } = require('./db.js');
 const app = express();
 const PORT = 3000;
 
@@ -111,7 +112,7 @@ app.post('/update-game', async (req, res) => {
             res.status(500).send({ success: false, message: 'Error updating game.', error: error.message });
         }
     } else {
-        res.status(503).send({ success: false, message: 'Service unavailable, please try again later.', error: error.message });
+        res.status(503).send({ success: false, message: 'Service unavailable, please try again later.'});
     }
 });
 
@@ -296,26 +297,29 @@ app.post('/toggle-central-node', (req, res) => {
 
 // Toggle Node 2 connection
 app.post('/toggle-node2', (req, res) => {
-    console.log('NODE 2 BEFORE : ', node2connection, '\n');
+    console.log('NODE 2 BEFORE : ', node2connection);
     node2connection = !node2connection;
-    console.log('NODE 2 AFTER : ', node2connection, '\n');
+    console.log('NODE 2 AFTER : ', node2connection);
     res.status(200).json({
         success: true,
         message: `Node 2 connection is now ${node2connection ? 'enabled' : 'disabled'}.`,
         status: node2connection
     });
+
+    
 });
 
 // Toggle Node 3 connection
 app.post('/toggle-node3', (req, res) => {
-    console.log('NODE 3 BEFORE : ', node3connection, '\n');
+    console.log('NODE 3 BEFORE : ', node3connection);
     node3connection = !node3connection;
-    console.log('NODE 3 AFTER : ', node3connection, '\n');
+    console.log('NODE 3 AFTER : ', node3connection);
     res.status(200).json({
         success: true,
         message: `Node 3 connection is now ${node3connection ? 'enabled' : 'disabled'}.`,
         status: node3connection
     });
+
 });
 
 // Start the server
