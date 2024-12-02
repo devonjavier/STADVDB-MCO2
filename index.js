@@ -83,6 +83,31 @@ app.post('/get-game-details', async (req, res) => {
     }
 });
 
+app.post('/add-game', async (req, res) => {
+    const { game_name, release_date, game_description, price, estimated_ownership, esrb_rating } = req.body;
+
+    try {
+        // Choose the appropriate model based on the node connections
+        if (centralnodeconnection) {
+            await GameDetails1.create({
+                game_name,
+                release_date,
+                game_description,
+                price,
+                estimated_ownership,
+                esrb_rating,
+            });
+        } else {
+            return res.status(503).send({ success: false, message: 'No active database connection available.' });
+        }
+        res.status(200).send({ success: true, message: 'Game added successfully.' });
+    } catch (error) {
+        console.error('Error adding game:', error);
+        res.status(500).send({ success: false, message: 'Failed to add game.' });
+    }
+});
+
+
 // Update game details by game_ID (partial update)
 app.post('/update-game', async (req, res) => {
     const { game_ID, newGameName } = req.body;
