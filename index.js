@@ -71,7 +71,7 @@ app.get('/', (req, res) => {
 app.post('/get-game-details', async (req, res) => {
     const { game_ID } = req.body;
 
-    const transaction = await sequelize.transaction({
+    const transaction = await Sequelize.transaction({
         isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
     });
 
