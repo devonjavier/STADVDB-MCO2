@@ -1,7 +1,7 @@
 const express = require('express');
 const { Sequelize } = require('sequelize'); // Sequelize instance for queries
 const { GameDetails1, GameDetails2, GameDetails3 } = require('./models/MCO_datawarehouse'); // Import the GameDetails model for each node
-const { centralNode, node2, node3 } = require('./db.js');
+const cron = require('node-cron');
 const app = express();
 const PORT = 3000;
 
@@ -33,6 +33,29 @@ async function initializeConnections(){
         node3InactiveAtStart = true;
     }
 }
+
+cron.schedule('*/5 * * * * *', async () => { // Run every 5 seconds
+    try {
+        await GameDetails1.count(); 
+        centralnodeconnection = true;
+    } catch {
+        centralnodeconnection = false;
+    }
+
+    try {
+        await GameDetails2.count();
+        node2connection = true;
+    } catch {
+        node2connection = false;
+    }
+
+    try {
+        await GameDetails3.count();
+        node3connection = true;
+    } catch {
+        node3connection = false;
+    }
+});
 
 app.use(express.json());
 
