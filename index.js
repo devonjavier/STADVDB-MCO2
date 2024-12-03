@@ -71,36 +71,46 @@ app.get('/', (req, res) => {
 app.post('/get-game-details', async (req, res) => {
     const { game_ID } = req.body;
 
+    const transaction = await sequelize.transaction({
+        isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+    });
+
     try {
         let game;
-        if(node2connection){
+        if (node2connection) {
             game = await GameDetails2.findOne({
-                where: { game_ID }
+                where: { game_ID },
+                transaction
             });
         }
-        
+
         if (!game) {
-            if(node3connection){
+            if (node3connection) {
                 game = await GameDetails3.findOne({
-                    where: { game_ID }
+                    where: { game_ID },
+                    transaction
                 });
             }
         }
 
         if (!game) {
-            if(centralnodeconnection){
+            if (centralnodeconnection) {
                 game = await GameDetails1.findOne({
-                    where: { game_ID }
+                    where: { game_ID },
+                    transaction
                 });
-            }  
+            }
         }
 
         if (!game) {
+            await transaction.rollback(); // Ensure transaction rollback if game is not found
             return res.status(404).send('Game details not found');
         }
 
+        await transaction.commit(); // Commit the transaction if the game is found
         res.json(game);
     } catch (err) {
+        await transaction.rollback(); // Rollback transaction on error
         console.error(err);
         res.status(500).send('Error fetching game details');
     }
@@ -108,6 +118,10 @@ app.post('/get-game-details', async (req, res) => {
 
 app.post('/add-game', async (req, res) => {
     const { game_name, release_date, game_description, price, estimated_ownership, esrb_rating } = req.body;
+
+    const transaction = await sequelize.transaction({
+        isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+    });
 
     try {
         // Choose the appropriate model based on the node connections
@@ -119,72 +133,66 @@ app.post('/add-game', async (req, res) => {
                 price,
                 estimated_ownership,
                 esrb_rating,
-            });
+            }, { transaction });
         } else {
+            await transaction.rollback(); // Rollback if no active connection
             return res.status(503).send({ success: false, message: 'No active database connection available.' });
         }
+
+        await transaction.commit(); // Commit the transaction if the game is added successfully
         res.status(200).send({ success: true, message: 'Game added successfully.' });
     } catch (error) {
+        await transaction.rollback(); // Rollback transaction on error
         console.error('Error adding game:', error);
         res.status(500).send({ success: false, message: 'Failed to add game.' });
     }
 });
 
 app.put('/update-game/:game_ID', async (req, res) => {
-    const { game_ID } = req.params; // Retrieve game_ID from URL parameters
-    const { 
-        newGameName, 
-        newReleaseDate, 
-        newDescription, 
-        newPrice, 
-        newOwnership, 
-        newEsrbRating 
-    } = req.body;
+    const { game_ID } = req.params;
+    const { newGameName, newReleaseDate, newDescription, newPrice, newOwnership, newEsrbRating } = req.body;
 
-    if (!game_ID) {
-        return res.status(400).json({ success: false, message: 'Game ID is required' });
-    }
+    const transaction = await sequelize.transaction({
+        isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+    });
 
-    const updatedFields = {};
+    try {
+        const updatedFields = {};
 
-    if (newGameName) updatedFields.game_name = newGameName;
-    if (newReleaseDate) updatedFields.release_date = newReleaseDate;
-    if (newDescription) updatedFields.game_description = newDescription;
-    if (newPrice !== undefined) updatedFields.price = newPrice;
-    if (newOwnership) updatedFields.estimated_ownership = newOwnership;
-    if (newEsrbRating) updatedFields.esrb_rating = newEsrbRating;
+        if (newGameName) updatedFields.game_name = newGameName;
+        if (newReleaseDate) updatedFields.release_date = newReleaseDate;
+        if (newDescription) updatedFields.game_description = newDescription;
+        if (newPrice !== undefined) updatedFields.price = newPrice;
+        if (newOwnership) updatedFields.estimated_ownership = newOwnership;
+        if (newEsrbRating) updatedFields.esrb_rating = newEsrbRating;
 
-    if (Object.keys(updatedFields).length === 0) {
-        return res.status(400).json({ success: false, message: 'Please provide at least one field to update' });
-    }
-
-    if (centralnodeconnection) {
-        try {
-            const game = await GameDetails1.findOne({ where: { game_ID } });
-
-            if (!game) {
-                return res.status(404).json({ success: false, message: 'Game not found' });
-            }
-
-            const updatedGame = await game.update(updatedFields);
-
-            return res.status(200).json({
-                success: true,
-                message: 'Game updated successfully.',
-                game: updatedGame
-            });
-        } catch (error) {
-            console.error('Error updating game:', error.message);
-            return res.status(500).json({
-                success: false,
-                message: 'Error updating game.',
-                error: error.message
-            });
+        if (Object.keys(updatedFields).length === 0) {
+            await transaction.rollback();
+            return res.status(400).json({ success: false, message: 'Please provide at least one field to update' });
         }
-    } else {
-        return res.status(503).json({
+
+        const game = await GameDetails1.findOne({ where: { game_ID }, transaction });
+
+        if (!game) {
+            await transaction.rollback();
+            return res.status(404).json({ success: false, message: 'Game not found' });
+        }
+
+        const updatedGame = await game.update(updatedFields, { transaction });
+        await transaction.commit(); // Commit the transaction if the game is updated
+
+        return res.status(200).json({
+            success: true,
+            message: 'Game updated successfully.',
+            game: updatedGame
+        });
+    } catch (error) {
+        await transaction.rollback(); // Rollback transaction on error
+        console.error('Error updating game:', error.message);
+        return res.status(500).json({
             success: false,
-            message: 'Service unavailable, please try again later.'
+            message: 'Error updating game.',
+            error: error.message
         });
     }
 });
@@ -197,29 +205,40 @@ app.post('/delete-game', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Game ID is required' });
     }
 
-    if(centralnodeconnection){
+    if (centralnodeconnection) {
+        const transaction = await Sequelize.transaction({
+            isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+        });
+
         try {
+            // Find the game within a repeatable read transaction
             const game = await GameDetails1.findOne({
-                where: { game_ID }
+                where: { game_ID },
+                transaction
             });
-    
+
             if (!game) {
+                await transaction.commit();  // Commit the transaction if no game found
                 return res.status(404).json({ success: false, message: 'Game not found' });
             }
-    
-            // Delete the game
-            await game.destroy();
-    
+
+            // Delete the game within the same transaction
+            await game.destroy({ transaction });
+
+            // Commit the transaction
+            await transaction.commit();
+
             res.status(200).json({ success: true, message: 'Game deleted successfully.' });
         } catch (error) {
+            await transaction.rollback();  // Rollback the transaction if error occurs
             console.error('Error deleting game:', error.message);
             res.status(500).send({ success: false, message: 'Error deleting game.', error: error.message });
         }
     } else {
-        res.status(503).send({ success: false, message: 'Service unavailable, please try again later.', error: error.message });
+        res.status(503).send({ success: false, message: 'Service unavailable, please try again later.' });
     }
-    
 });
+
 
 // Sum of games in a specific release year
 app.post('/get-games-sum', async (req, res) => {
