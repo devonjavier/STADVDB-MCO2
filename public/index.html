@@ -60,7 +60,7 @@
             <button id="node3-toggle">Toggle</button>
         </div>
     </div>
-    
+
     <!-- Add Game Section -->
     <h2>Add Game</h2>
     <form id="addGameForm">
@@ -385,29 +385,30 @@
         });
 
         // Handle game update form submission
-        updateForm.addEventListener('submit', async function(e) {
+        updateForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            if (!selectedGameID) {
-                alert('Please select a game first.');
-                return;
-            }
-
-            const updatedData = {
-                game_ID: selectedGameID,
-                newGameName: document.getElementById('newGameName').value, // Only sending the updated game name
+            const updatedGameData = {
+                newGameName: document.getElementById('newGameName').value || null,
+                newReleaseDate: document.getElementById('newReleaseDate').value || null,
+                newDescription: document.getElementById('newDescription').value || null,
+                newPrice: parseFloat(document.getElementById('newPrice').value) || null,
+                newOwnership: document.getElementById('newOwnership').value || null,
+                newEsrbRating: document.getElementById('newEsrbRating').value || null,
             };
 
+            const selectedGameID = document.getElementById('gameID').value;  // Ensure gameID is being correctly selected
+
             try {
-                const response = await fetch('/update-game', {
-                    method: 'POST',
+                const response = await fetch(`/update-game/${selectedGameID}`, {
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedData)
+                    body: JSON.stringify(updatedGameData),
                 });
 
                 if (response.ok) {
-                    alert('Game updated successfully.');
-                    form.dispatchEvent(new Event('submit')); // Fetch updated game details after update
+                    alert('Game updated successfully!');
+                    updateForm.reset(); // Clear the form fields
                 } else {
                     throw new Error('Failed to update game');
                 }
@@ -415,7 +416,6 @@
                 alert('Error updating game: ' + error.message);
             }
         });
-
 
         // Handle game deletion
         deleteButton.addEventListener('click', async function() {

@@ -107,37 +107,62 @@ app.post('/add-game', async (req, res) => {
     }
 });
 
+app.put('/update-game/:game_ID', async (req, res) => {
+    const { game_ID } = req.params; // Retrieve game_ID from URL parameters
+    const { 
+        newGameName, 
+        newReleaseDate, 
+        newDescription, 
+        newPrice, 
+        newOwnership, 
+        newEsrbRating 
+    } = req.body;
 
-// Update game details by game_ID (partial update)
-app.post('/update-game', async (req, res) => {
-    const { game_ID, newGameName } = req.body;
-
-    if (!game_ID || !newGameName) {
-        return res.status(400).json({ success: false, message: 'Game ID and new game name are required' });
+    if (!game_ID) {
+        return res.status(400).json({ success: false, message: 'Game ID is required' });
     }
 
-    if(centralnodeconnection){
+    const updatedFields = {};
+
+    if (newGameName) updatedFields.game_name = newGameName;
+    if (newReleaseDate) updatedFields.release_date = newReleaseDate;
+    if (newDescription) updatedFields.game_description = newDescription;
+    if (newPrice !== undefined) updatedFields.price = newPrice;
+    if (newOwnership) updatedFields.estimated_ownership = newOwnership;
+    if (newEsrbRating) updatedFields.esrb_rating = newEsrbRating;
+
+    if (Object.keys(updatedFields).length === 0) {
+        return res.status(400).json({ success: false, message: 'Please provide at least one field to update' });
+    }
+
+    if (centralnodeconnection) {
         try {
-            const game = await GameDetails1.findOne({
-                where: { game_ID }
-            });
-    
+            const game = await GameDetails1.findOne({ where: { game_ID } });
+
             if (!game) {
                 return res.status(404).json({ success: false, message: 'Game not found' });
             }
-    
-            // Only update the game name if provided
-            const updatedGame = await game.update({
-                game_name: newGameName // Only updating the game_name
+
+            const updatedGame = await game.update(updatedFields);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Game updated successfully.',
+                game: updatedGame
             });
-    
-            res.status(200).json({ success: true, message: 'Game updated successfully.', game: updatedGame });
         } catch (error) {
             console.error('Error updating game:', error.message);
-            res.status(500).send({ success: false, message: 'Error updating game.', error: error.message });
+            return res.status(500).json({
+                success: false,
+                message: 'Error updating game.',
+                error: error.message
+            });
         }
     } else {
-        res.status(503).send({ success: false, message: 'Service unavailable, please try again later.'});
+        return res.status(503).json({
+            success: false,
+            message: 'Service unavailable, please try again later.'
+        });
     }
 });
 
@@ -176,7 +201,7 @@ app.post('/delete-game', async (req, res) => {
 // Sum of games in a specific release year
 app.post('/get-games-sum', async (req, res) => {
     const { releaseYear } = req.body;
-
+    
    
     if (!releaseYear || !/^\d{4}$/.test(releaseYear)) {
         return res.status(400).json({ success: false, message: 'Valid release year is required' });
