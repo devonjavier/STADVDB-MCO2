@@ -143,11 +143,35 @@ app.post('/add-game', async (req, res) => {
 app.put('/update-game/:game_ID', async (req, res) => {
     const { game_ID } = req.params;
     const { newGameName, newReleaseDate, newDescription, newPrice, newOwnership, newEsrbRating } = req.body;
+    let game, transaction;
 
-    const transaction = await centralNode.transaction({
-        isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
-    });
+    if(!centralnodeconnection){
+        if(node2connection){
+            console.log('NODE 2 IS MASTER');
+            transaction = await node2.transaction({
+                isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+            });
+            
+            game = await GameDetails2.findOne({ where: { game_ID }, transaction });
+        } else if(!node2connection && node3connection){
+            console.log('NODE 3 IS MASTER');
+            transaction = await node3.transaction({
+                isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+            });
+            game = await GameDetails3.findOne({ where: { game_ID }, transaction });
+        } else if(!node2connection && !node2connection){
+            console.log('NONE');
+            game = false;
+        }
+    } else {
+        console.log('NODE 1 IS MASTER');
+        transaction = await centralNode.transaction({
+            isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+        });
+        game = await GameDetails1.findOne({ where: { game_ID }, transaction });
+    }
 
+    
     try {
         const updatedFields = {};
 
@@ -162,9 +186,8 @@ app.put('/update-game/:game_ID', async (req, res) => {
             await transaction.rollback();
             return res.status(400).json({ success: false, message: 'Please provide at least one field to update' });
         }
-
-        const game = await GameDetails1.findOne({ where: { game_ID }, transaction });
-
+    
+        
         if (!game) {
             await transaction.rollback();
             return res.status(404).json({ success: false, message: 'Game not found' });
