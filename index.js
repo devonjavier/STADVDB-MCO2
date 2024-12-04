@@ -1,6 +1,7 @@
 const express = require('express');
 const { Sequelize } = require('sequelize'); // Sequelize instance for queries
 const { GameDetails1, GameDetails2, GameDetails3 } = require('./models/MCO_datawarehouse'); // Import the GameDetails model for each node
+const { centralNode, node2, node3} = require('./db.js');
 const cron = require('node-cron');
 const app = express();
 const PORT = 3000;
@@ -71,9 +72,7 @@ app.get('/', (req, res) => {
 app.post('/get-game-details', async (req, res) => {
     const { game_ID } = req.body;
 
-    const transaction = await Sequelize.transaction({
-        isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
-    });
+    let transaction;
 
     try {
         let game;
@@ -82,6 +81,11 @@ app.post('/get-game-details', async (req, res) => {
                 where: { game_ID },
                 transaction
             });
+            transaction = await node2.transaction({
+                isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+            });
+
+            console.log(game);
         }
 
         if (!game) {
@@ -90,6 +94,11 @@ app.post('/get-game-details', async (req, res) => {
                     where: { game_ID },
                     transaction
                 });
+                transaction = await node3.transaction({
+                    isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+                });
+
+                console.log(game);
             }
         }
 
@@ -99,6 +108,11 @@ app.post('/get-game-details', async (req, res) => {
                     where: { game_ID },
                     transaction
                 });
+                transaction = await centralNode.transaction({
+                    isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
+                });
+
+                console.log(game);
             }
         }
 
@@ -119,7 +133,7 @@ app.post('/get-game-details', async (req, res) => {
 app.post('/add-game', async (req, res) => {
     const { game_name, release_date, game_description, price, estimated_ownership, esrb_rating } = req.body;
 
-    const transaction = await sequelize.transaction({
+    const transaction = await centralNode.transaction({
         isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
     });
 
@@ -152,7 +166,7 @@ app.put('/update-game/:game_ID', async (req, res) => {
     const { game_ID } = req.params;
     const { newGameName, newReleaseDate, newDescription, newPrice, newOwnership, newEsrbRating } = req.body;
 
-    const transaction = await sequelize.transaction({
+    const transaction = await centralNode.transaction({
         isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
     });
 
@@ -179,7 +193,12 @@ app.put('/update-game/:game_ID', async (req, res) => {
         }
 
         const updatedGame = await game.update(updatedFields, { transaction });
-        await transaction.commit(); // Commit the transaction if the game is updated
+
+        console.log('Transaction is open. Commit is delayed for 10 seconds...');
+        setTimeout(async () => {
+            await transaction.commit();
+            console.log('Transaction committed.');
+        }, 10000); // Wait 10 seconds before committing 
 
         return res.status(200).json({
             success: true,
@@ -206,7 +225,7 @@ app.post('/delete-game', async (req, res) => {
     }
 
     if (centralnodeconnection) {
-        const transaction = await Sequelize.transaction({
+        const transaction = await centralNode.transaction({
             isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ
         });
 

@@ -18,12 +18,15 @@ const centralNode = new Sequelize('mco1_datawarehouse', process.env.DB1_USER, pr
         ssl: {
             require: true,
             rejectUnauthorized: false
-        }
+        },
+        connectionTimeout: 10000
+    }, pool: {
+        acquire: 30000
     }
 });
 
 if(centralNode){
-    console.log('Central Node Connected! ', centralNode);
+    console.log('Central Node Connected! ');
 }
 
 const node2 = new Sequelize('mco1_datawarehouse', process.env.DB2_USER, process.env.DB_PASS, {
@@ -35,12 +38,15 @@ const node2 = new Sequelize('mco1_datawarehouse', process.env.DB2_USER, process.
         ssl: {
             require: true,
             rejectUnauthorized: false
-        }
+        },
+        connectionTimeout: 10000
+    }, pool: {
+        acquire: 30000
     }
 });
 
 if(centralNode){
-    console.log('Node 2 Connected! ', node2);
+    console.log('Node 2 Connected! ');
 }
 
 // node3 here
@@ -53,12 +59,15 @@ const node3 = new Sequelize('mco1_datawarehouse', process.env.DB3_USER, process.
         ssl: {
             require: true,
             rejectUnauthorized: false
-        }
+        },
+        connectionTimeout: 10000
+    }, pool: {
+        acquire: 30000
     }
 });
 
 if(centralNode){
-    console.log('Node 3 Connected! ', node3);
+    console.log('Node 3 Connected! ');
 }
 
 Promise.all([
