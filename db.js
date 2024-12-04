@@ -1,5 +1,5 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config({ path: '.env' });
+require('dotenv').config({ path: '.env.local' });
 
 // { path: '.env.local' }
 
