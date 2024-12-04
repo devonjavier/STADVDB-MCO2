@@ -35,7 +35,7 @@ const node2 = new Sequelize('mco1_datawarehouse', process.env.DB2_USER, process.
         ssl: {
             require: true,
             rejectUnauthorized: false
-        }
+        },
     }
 });
 
@@ -53,7 +53,7 @@ const node3 = new Sequelize('mco1_datawarehouse', process.env.DB3_USER, process.
         ssl: {
             require: true,
             rejectUnauthorized: false
-        }
+        },
     }
 });
 
